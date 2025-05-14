@@ -82,4 +82,31 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
     implementation("androidx.appcompat:appcompat:1.6.1")  // Explicit version
+
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.7.0") // Remplacez par la dernière version stable
+
+    // ...
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.3")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.3")
+    // ...
+    // Pour ViewModel en Compose
+    implementation ("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.2")
+
+    // Pour observer LiveData avec observeAsState
+    implementation ("androidx.compose.runtime:runtime-livedata:1.6.1")
+
+    // Pour collectAsStateWithLifecycle (si tu l'utilises aussi)
+    implementation ("androidx.lifecycle:lifecycle-runtime-compose:2.6.2")
+
+    // (Optionnel) Pour Kotlin coroutines si tu utilises StateFlow
+    implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    // Jetpack Compose runtime + LiveData
+    implementation ("androidx.compose.runtime:runtime-livedata:1.6.1")
+
+    // ViewModel + Compose integration
+    implementation ("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.2")
+
+    // Runtime Compose pour collectAsStateWithLifecycle (si besoin)
+    implementation ("androidx.lifecycle:lifecycle-runtime-compose:2.6.2")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.3")
 }
