@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "115214717853",
+    "project_id": "lespetitespuces-10880",
+    "storage_bucket": "lespetitespuces-10880.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:115214717853:android:2f3cd56961a2c8abd3d574",
+        "android_client_info": {
+          "package_name": "com.example.lespetitespuces"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD9xdEke4GrrYgSZ9tELtS1_mLEHDX3RtY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
