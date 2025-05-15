@@ -58,21 +58,31 @@ dependencies {
     androidTestImplementation(platform(libs.androidx.compose.bom))
 
     // Firebase (using BOM)
-    implementation(platform("com.google.firebase:firebase-bom:32.3.1")) // Updated to latest stable version
+    implementation(platform("com.google.firebase:firebase-bom:32.3.1"))
     implementation("com.google.firebase:firebase-auth-ktx")
     implementation("com.google.firebase:firebase-firestore-ktx")
-    implementation("com.google.firebase:firebase-database-ktx") // Use ktx version
+    implementation("com.google.firebase:firebase-database-ktx")
 
-    // Other libraries
-    implementation("io.coil-kt:coil-compose:2.4.0") // Updated version
-    implementation("com.google.accompanist:accompanist-pager:0.30.1") // Updated version
-    implementation("com.google.accompanist:accompanist-pager-indicators:0.30.1") // Updated version
+    // Coil (images)
+    implementation("io.coil-kt:coil-compose:2.5.0")
 
-    // Remove duplicate or conflicting dependencies
-    // implementation(libs.firebase.database) // Remove this line if it's not the ktx version
-    // implementation(libs.androidx.appcompat) // Not typically needed with Compose
-    // implementation(libs.androidx.activity) // Already covered by activity-compose
-    // implementation(libs.androidx.constraintlayout) // Use constraintlayout-compose instead
+    // Accompanist (Pager)
+    implementation("com.google.accompanist:accompanist-pager:0.30.1")
+    implementation("com.google.accompanist:accompanist-pager-indicators:0.30.1")
+
+    // Material Icons Extended
+    implementation("androidx.compose.material:material-icons-extended:1.6.2")
+
+    // Navigation Compose
+    implementation("androidx.navigation:navigation-compose:2.7.1")
+
+    // Lifecycle + ViewModel + Compose
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.3")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.3")
+    implementation("androidx.compose.runtime:runtime-livedata:1.6.1")
+
+    // Coroutines
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 
     // Testing
     testImplementation(libs.junit)
@@ -81,32 +91,19 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
-    implementation("androidx.appcompat:appcompat:1.6.1")  // Explicit version
 
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.7.0") // Remplacez par la dernière version stable
+    // AppCompat (si nécessaire, peut souvent être évité avec Compose)
+    implementation("androidx.appcompat:appcompat:1.6.1")
+    // Navigation Compose
+    implementation("androidx.navigation:navigation-compose:2.7.1")
 
-    // ...
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.3")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.3")
-    // ...
-    // Pour ViewModel en Compose
-    implementation ("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.2")
+// ViewModel + Compose
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.2")
 
-    // Pour observer LiveData avec observeAsState
-    implementation ("androidx.compose.runtime:runtime-livedata:1.6.1")
+// Runtime Compose pour collectAsStateWithLifecycle, etc.
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.6.2")
 
-    // Pour collectAsStateWithLifecycle (si tu l'utilises aussi)
-    implementation ("androidx.lifecycle:lifecycle-runtime-compose:2.6.2")
+// LiveData + Compose
+    implementation("androidx.compose.runtime:runtime-livedata:1.5.1")
 
-    // (Optionnel) Pour Kotlin coroutines si tu utilises StateFlow
-    implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
-    // Jetpack Compose runtime + LiveData
-    implementation ("androidx.compose.runtime:runtime-livedata:1.6.1")
-
-    // ViewModel + Compose integration
-    implementation ("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.2")
-
-    // Runtime Compose pour collectAsStateWithLifecycle (si besoin)
-    implementation ("androidx.lifecycle:lifecycle-runtime-compose:2.6.2")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.3")
 }

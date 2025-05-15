@@ -1,25 +1,38 @@
-package com.example.lespetitespuces // Le package de votre MainActivity
+package com.example.lespetitespuces
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.viewModels // <<--- IMPORT IMPORTANT
+import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.getValue // <<--- IMPORT IMPORTANT
-import androidx.compose.runtime.livedata.observeAsState // <<--- IMPORT IMPORTANT
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
-import com.example.lespetitespuces.Model.CategoryModel // Votre modèle de catégorie
+import androidx.navigation.NavHostController
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import com.example.lespetitespuces.Model.CategoryModel
+import com.example.lespetitespuces.model.ItemsModel
 import com.example.lespetitespuces.ui.screens.MainScreen
+import com.example.lespetitespuces.ui.screens.ProductDetailScreen // Nous allons créer ce fichier
 import com.example.lespetitespuces.ui.theme.LesPetitesPucesTheme
 import com.example.lespetitespuces.ui.theme.MainViewModel
 
+// Définir les routes pour la navigation
+object AppRoutes {
+    const val MAIN_SCREEN = "main"
+    const val PRODUCT_DETAIL_SCREEN = "product_detail"
+    const val ARG_ITEM_ID = "itemId" // Clé pour l'argument de l'ID de l'item
+}
 
 class MainActivity : ComponentActivity() {
 
-    // Instancier le ViewModel en utilisant la délégation KTX
-    // Cela garantit que le ViewModel est correctement géré par le cycle de vie de l'activité.
     private val mainViewModel: MainViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -30,15 +43,52 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    // Observer les catégories depuis le ViewModel.
-                    // mainViewModel.loadCategory() retourne un LiveData<MutableList<CategoryModel>>.
-                    // observeAsState le convertit en un State<List<CategoryModel>> que Compose peut utiliser.
-                    // L'utilisation de `initial = emptyList()` garantit que `categories` n'est jamais null.
                     val categories: List<CategoryModel> by mainViewModel.loadCategory().observeAsState(initial = emptyList())
+                    val allItems: List<ItemsModel> by mainViewModel.loadItems().observeAsState(initial = emptyList())
 
-                    // Appeler MainScreen et lui passer la liste des catégories observées.
-                    MainScreen(categories = categories)
+                    AppNavigation(
+                        categories = categories,
+                        allItems = allItems
+                    )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun AppNavigation(
+    categories: List<CategoryModel>,
+    allItems: List<ItemsModel>
+) {
+    val navController: NavHostController = rememberNavController()
+
+    NavHost(navController = navController, startDestination = AppRoutes.MAIN_SCREEN) {
+        composable(AppRoutes.MAIN_SCREEN) {
+            MainScreen(
+                navController = navController, // Passer le NavController
+                categories = categories,
+                allItems = allItems
+            )
+        }
+        composable(
+            route = "${AppRoutes.PRODUCT_DETAIL_SCREEN}/{${AppRoutes.ARG_ITEM_ID}}", // Route avec argument
+            arguments = listOf(navArgument(AppRoutes.ARG_ITEM_ID) { type = NavType.StringType })
+        ) { backStackEntry ->
+            val itemId = backStackEntry.arguments?.getString(AppRoutes.ARG_ITEM_ID)
+            // Trouver l'item correspondant. Pour plus de robustesse, itemId devrait être un ID unique.
+            // Ici, nous utilisons le titre, ce qui peut être problématique s'ils ne sont pas uniques.
+            val selectedItem = allItems.find { it.title == itemId } // ATTENTION: S'assurer que 'itemId' est unique!
+
+            if (itemId != null && selectedItem != null) {
+                ProductDetailScreen(
+                    navController = navController,
+                    item = selectedItem
+                )
+            } else {
+                // Gérer le cas où l'item n'est pas trouvé ou l'ID est null (ex: afficher un message d'erreur)
+                // Pour l'instant, on pourrait juste revenir en arrière ou afficher un écran vide.
+                navController.popBackStack() // Solution simple pour l'instant
             }
         }
     }

@@ -1,14 +1,21 @@
 package com.example.lespetitespuces.ui.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items // important pour LazyVerticalGrid
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -16,18 +23,25 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-// import androidx.compose.runtime.livedata.observeAsState // Potentially not needed here if categories are passed directly
-// import androidx.lifecycle.viewmodel.compose.viewModel // Explicitly removed as per request
-
+import coil.compose.AsyncImage // Pour charger les images depuis une URL
+import coil.request.ImageRequest
 import com.example.lespetitespuces.Model.CategoryModel
 import com.example.lespetitespuces.R
-// import com.example.lespetitespuces.ui.theme.MainViewModel // ViewModel type might not be needed in this file anymore
+import com.example.lespetitespuces.model.ItemsModel // Importez ItemsModel
+
+import androidx.navigation.NavController // Importer NavController
+
+
+
 
 val Italianno = FontFamily(
     Font(R.font.italianno_regular)
@@ -35,10 +49,10 @@ val Italianno = FontFamily(
 
 @Composable
 fun MainScreen(
-    categories: List<CategoryModel> // Categories are now passed as a direct parameter
+    categories: List<CategoryModel>,
+    allItems: List<ItemsModel> // Accepter tous les items
 ) {
-    // La logique pour obtenir 'categories' (par exemple, depuis un ViewModel)
-    // doit maintenant être gérée par l'appelant de MainScreen.
+    var selectedCategoryId by remember { mutableStateOf(-1) } // -1 pour "Tous"
 
     Scaffold(
         topBar = { AppHeader() },
@@ -48,14 +62,19 @@ fun MainScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues),
-                categories = categories  // Passage des catégories reçues en paramètre
+                categories = categories,
+                allItems = allItems,
+                selectedCategoryId = selectedCategoryId,
+                onCategorySelected = { categoryId ->
+                    selectedCategoryId = categoryId
+                }
             )
         }
     )
 }
 
 @Composable
-private fun AppHeader() {
+private fun AppHeader() { // Pas de changement ici
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -63,32 +82,15 @@ private fun AppHeader() {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(
-            horizontalAlignment = Alignment.Start
-        ) {
-            Text(
-                text = "Les petites puces",
-                fontSize = 40.sp,
-                fontFamily = Italianno,
-            )
-            Text(
-                text = "L'art de gamer avec style",
-                fontSize = 30.sp,
-                fontFamily = Italianno,
-            )
+        Column(horizontalAlignment = Alignment.Start) {
+            Text(text = "Les petites puces", fontSize = 40.sp, fontFamily = Italianno)
+            Text(text = "L'art de gamer avec style", fontSize = 30.sp, fontFamily = Italianno)
         }
-
         Box(
-            modifier = Modifier
-                .size(40.dp)
-                .background(Color.Red, CircleShape),
+            modifier = Modifier.size(40.dp).background(Color.Red, CircleShape),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = "AN",
-                color = Color.White,
-                fontWeight = FontWeight.Bold
-            )
+            Text(text = "AN", color = Color.White, fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -96,42 +98,63 @@ private fun AppHeader() {
 @Composable
 fun HomeContent(
     modifier: Modifier = Modifier,
-    categories: List<CategoryModel> = emptyList()
+    categories: List<CategoryModel>,
+    allItems: List<ItemsModel>,
+    selectedCategoryId: Int,
+    onCategorySelected: (Int) -> Unit
 ) {
+    val displayedItems = remember(allItems, selectedCategoryId) {
+        if (selectedCategoryId == -1) { // -1 est l'ID pour "Tous"
+            allItems
+        } else {
+            allItems.filter { item ->
+                // Assurez-vous que la comparaison des ID est correcte
+                // ItemsModel.categoryId est un String, CategoryModel.id est un Int
+                item.categoryId.toIntOrNull() == selectedCategoryId
+            }
+        }
+    }
+
     Column(
-        modifier = modifier
-            .padding(horizontal = 16.dp)
+        modifier = modifier.padding(horizontal = 16.dp)
     ) {
         Spacer(modifier = Modifier.height(8.dp))
-
         SearchBar()
-
         Spacer(modifier = Modifier.height(16.dp))
-
-        CategoryTabs(categories = categories)
-
+        CategoryTabs(
+            categories = categories,
+            selectedCategoryId = selectedCategoryId,
+            onCategorySelected = onCategorySelected
+        )
         Spacer(modifier = Modifier.height(8.dp))
-
-        Divider(
-            color = Color.Black,
-            thickness = 1.dp,
-            modifier = Modifier.fillMaxWidth()
-        )
-
+        Divider(color = Color.Black, thickness = 1.dp, modifier = Modifier.fillMaxWidth())
         Spacer(modifier = Modifier.height(16.dp))
 
-        Text(
-            text = "Liste des produits à implémenter",
-            style = MaterialTheme.typography.bodyMedium,
-            color = Color.Gray
-        )
+        // Afficher la liste des produits
+        if (displayedItems.isEmpty() && allItems.isNotEmpty()) { // Si le filtre ne donne rien mais qu'il y a des items
+            Text(
+                text = "Aucun produit trouvé pour cette catégorie.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.Gray,
+                modifier = Modifier.align(Alignment.CenterHorizontally).padding(16.dp)
+            )
+        } else if (allItems.isEmpty() && categories.isNotEmpty()){ // Si aucun item n'est chargé au départ
+            Text(
+                text = "Chargement des produits...",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.Gray,
+                modifier = Modifier.align(Alignment.CenterHorizontally).padding(16.dp)
+            )
+        }
+        else {
+            ProductList(items = displayedItems)
+        }
     }
 }
 
 @Composable
-fun SearchBar() {
+fun SearchBar() { // Pas de changement ici
     var searchText by remember { mutableStateOf("") }
-
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -142,19 +165,11 @@ fun SearchBar() {
             .border(width = 1.dp, color = Color.Gray, shape = RoundedCornerShape(20.dp))
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 12.dp),
+            modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = Icons.Default.Search,
-                contentDescription = "Rechercher",
-                tint = Color.Gray
-            )
-
+            Icon(imageVector = Icons.Default.Search, contentDescription = "Rechercher", tint = Color.Gray)
             Spacer(modifier = Modifier.width(8.dp))
-
             TextField(
                 value = searchText,
                 onValueChange = { searchText = it },
@@ -174,43 +189,37 @@ fun SearchBar() {
 }
 
 @Composable
-fun CategoryTabs(categories: List<CategoryModel>) {
-    val defaultCategory = CategoryModel(title = "Tous", id = -1)
-    val allCategories = remember(categories) {
+fun CategoryTabs(
+    categories: List<CategoryModel>,
+    selectedCategoryId: Int, // ID de la catégorie actuellement sélectionnée
+    onCategorySelected: (Int) -> Unit // Callback pour notifier la sélection
+) {
+    val defaultCategory = CategoryModel(title = "Tous", id = -1) // ID -1 pour "Tous"
+    val allDisplayCategories = remember(categories) {
         listOf(defaultCategory) + categories
     }
+    val scrollState = rememberScrollState()
 
-    var selectedCategoryId by remember { mutableStateOf(-1) }
-    val scrollState = rememberScrollState() // <<--- ÉTAT POUR LE DÉFILEMENT
-
-    // Enveloppez le Row avec horizontalScroll
     Row(
         modifier = Modifier
-            .fillMaxWidth() // Le Row externe peut remplir la largeur
-            .horizontalScroll(scrollState), // <<--- AJOUTER LE DÉFILEMENT HORIZONTAL
+            .fillMaxWidth()
+            .horizontalScroll(scrollState),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
-        // verticalAlignment = Alignment.CenterVertically // Peut être utile si les hauteurs varient
     ) {
-        if (allCategories.isEmpty() || (allCategories.size == 1 && allCategories.first().id == -1 && categories.isEmpty())) {
-            // Le Row interne aura une taille fixe, donc le message peut être affiché à l'extérieur si besoin
-            // Ou gardez-le ici, il défilera aussi s'il est trop long
-            Text(
-                text = "Chargement des catégories ou aucune catégorie disponible...",
-                modifier = Modifier.padding(start = 16.dp, end = 16.dp) // Assurez-vous qu'il soit visible
-            )
+        if (allDisplayCategories.isEmpty() || (allDisplayCategories.size == 1 && allDisplayCategories.first().id == -1 && categories.isEmpty())) {
+            Text("Chargement...", modifier = Modifier.padding(start = 16.dp, end = 16.dp))
         } else {
-            allCategories.forEach { category ->
-                val isSelected = category.id == selectedCategoryId
-
+            allDisplayCategories.forEach { category ->
+                val isSelected = category.id == selectedCategoryId // Utiliser l'ID passé
                 Button(
-                    onClick = { selectedCategoryId = category.id },
+                    onClick = { onCategorySelected(category.id) }, // Appeler le callback
                     shape = RoundedCornerShape(20.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = if (isSelected) Color.Red else Color.LightGray,
                         contentColor = if (isSelected) Color.White else Color.Black
                     ),
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                    modifier = Modifier.height(36.dp) // Les boutons ont une hauteur fixe
+                    modifier = Modifier.height(36.dp)
                 ) {
                     Text(text = category.title)
                 }
@@ -220,55 +229,119 @@ fun CategoryTabs(categories: List<CategoryModel>) {
 }
 
 @Composable
-private fun AppFooter() {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(56.dp)
-            .background(Color.Red)
+fun ProductList(items: List<ItemsModel>) {
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(2), // 2 colonnes comme dans le design
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp), // Espace entre les colonnes
+        verticalArrangement = Arrangement.spacedBy(8.dp)     // Espace entre les lignes
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 6.dp)
-                .align(Alignment.BottomCenter),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            FooterImageItem(
-                drawableResId = R.drawable.home,
-                contentDescription = "Accueil",
-                onClick = { /* TODO */ }
-            )
-            FooterImageItem(
-                drawableResId = R.drawable.favorite,
-                contentDescription = "Favoris",
-                onClick = { /* TODO */ }
-            )
-            FooterImageItem(
-                drawableResId = R.drawable.support_agent,
-                contentDescription = "support",
-                onClick = { /* TODO */ }
-            )
-            FooterImageItem(
-                drawableResId = R.drawable.account_circle,
-                contentDescription = "account",
-                onClick = { /* TODO */ }
-            )
+        items(items, key = { item -> item.title + item.categoryId }) { item -> // Clé unique pour la performance
+            ProductItemCard(item = item)
         }
     }
 }
 
 @Composable
-private fun FooterImageItem(
-    drawableResId: Int,
-    contentDescription: String,
-    onClick: () -> Unit
-) {
-    IconButton(
-        onClick = onClick,
-        modifier = Modifier.size(40.dp)
+fun ProductItemCard(item: ItemsModel) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth() // La carte prendra la largeur de sa cellule de grille
+            // .height(280.dp) // Hauteur fixe si vous voulez, ou laissez dynamique
+            .clickable { /* TODO: Action au clic sur l'item */ },
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
+        Column {
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(item.picUrl.firstOrNull()) // Prendre la première image de la liste
+                    .crossfade(true)
+//                    .placeholder(R.drawable.placeholder_image) // Ajoutez une image placeholder dans vos drawables
+//                    .error(R.drawable.placeholder_image) // Image si erreur de chargement
+                    .build(),
+                contentDescription = item.title,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(150.dp) // Hauteur pour l'image
+                    .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)),
+                contentScale = ContentScale.Crop // Ou ContentScale.Fit selon le rendu souhaité
+            )
+
+            Column(modifier = Modifier.padding(12.dp)) {
+                Text(
+                    text = item.title,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = item.description, // Peut-être tronquer ou choisir une partie spécifique
+                    fontSize = 12.sp,
+                    color = Color.Gray,
+                    maxLines = 2, // Limiter la description
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Filled.Star,
+                            contentDescription = "Rating",
+                            tint = Color(0xFFFFC107), // Couleur Jaune/Or pour l'étoile
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = item.rating.toString(),
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                    Icon(
+                        imageVector = Icons.Filled.FavoriteBorder, // Ou Icons.Filled.Favorite si favori
+                        contentDescription = "Favorite",
+                        tint = Color.Gray,
+                        modifier = Modifier.size(20.dp)
+                            .clickable { /* TODO: Logique pour ajouter/retirer des favoris */ }
+                    )
+                }
+                // Vous pouvez ajouter le prix si nécessaire ici
+                Text(text = "${item.price} DH", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.primary)
+            }
+        }
+    }
+}
+
+
+@Composable
+private fun AppFooter() { // Pas de changement ici
+    Box(modifier = Modifier.fillMaxWidth().height(56.dp).background(Color.Red)) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp).align(Alignment.BottomCenter),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            FooterImageItem(R.drawable.home, "Accueil") { /* TODO */ }
+            FooterImageItem(R.drawable.favorite, "Favoris") { /* TODO */ }
+            FooterImageItem(R.drawable.support_agent, "support") { /* TODO */ }
+            FooterImageItem(R.drawable.account_circle, "account") { /* TODO */ }
+        }
+    }
+}
+
+@Composable
+private fun FooterImageItem(drawableResId: Int, contentDescription: String, onClick: () -> Unit) { // Pas de changement ici
+    IconButton(onClick = onClick, modifier = Modifier.size(40.dp)) {
         Icon(
             painter = painterResource(id = drawableResId),
             contentDescription = contentDescription,
@@ -277,23 +350,3 @@ private fun FooterImageItem(
         )
     }
 }
-
-// Pour utiliser ce MainScreen, vous devrez l'appeler depuis un autre Composable
-// en lui passant la liste des catégories. Par exemple:
-//
-// Dans votre activité ou un Composable parent :
-// @Composable
-// fun MyApp() {
-//     // Exemple: catégories statiques pour démonstration
-//     val sampleCategories = listOf(
-//         CategoryModel(title = "PC Gamer", id = 1),
-//         CategoryModel(title = "Consoles", id = 2),
-//         CategoryModel(title = "Accessoires", id = 3)
-//     )
-//
-//     // Si vous utilisez toujours un ViewModel à un niveau supérieur pour obtenir les catégories:
-//     // val mainViewModel: MainViewModel = ... (obtenu d'une autre manière, ex: Hilt, ou ViewModelProvider)
-//     // val categoriesFromVm by mainViewModel.loadCategory().observeAsState(emptyList())
-//
-//     MainScreen(categories = sampleCategories /* ou categoriesFromVm ?: emptyList() */)
-// }
