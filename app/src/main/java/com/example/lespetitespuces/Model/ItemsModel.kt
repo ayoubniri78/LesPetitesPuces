@@ -8,5 +8,6 @@ data class ItemsModel(
     var picUrl: ArrayList<String> = ArrayList(),
     var price: Double = 0.0,
     var rating: Double = 0.0,
-    var categoryId: String = ""
+    var categoryId: String = "",
+    var stock: Int= 1
 ) : Serializable

@@ -105,5 +105,6 @@ dependencies {
 
 // LiveData + Compose
     implementation("androidx.compose.runtime:runtime-livedata:1.5.1")
+    implementation("com.google.firebase:firebase-auth-ktx")
 
 }
